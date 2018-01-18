@@ -14,6 +14,10 @@ module Pod
     @treat_titles_as_messages = false
     @warnings = []
 
+    @flamestack = []
+    @flamefile = File.open('flamefile', 'w')
+    at_exit { @flamefile.close }
+
     class << self
       include Config::Mixin
 
@@ -61,9 +65,19 @@ module Pod
 
         self.indentation_level += relative_indentation
         self.title_level += 1
-        yield if block_given?
+        time(title) { yield } if block_given?
         self.indentation_level -= relative_indentation
         self.title_level -= 1
+      end
+
+      def time(title, &block)
+        require 'benchmark'
+        ret = nil
+        @flamestack << title
+        time = Benchmark.realtime { ret = yield }
+        @flamefile << "#{@flamestack.join(';').gsub(/[^\w.;]/, '_')} #{time * 1_000_000}\n"
+        @flamestack.pop
+        ret
       end
 
       # In verbose mode it shows the sections and the contents.
@@ -82,7 +96,7 @@ module Pod
 
         self.indentation_level += relative_indentation
         self.title_level += 1
-        yield if block_given?
+        time(title) { yield } if block_given?
         self.indentation_level -= relative_indentation
         self.title_level -= 1
       end
@@ -113,7 +127,7 @@ module Pod
 
         self.indentation_level += relative_indentation
         self.title_level += 1
-        yield if block_given?
+        time(title) { yield } if block_given?
         self.indentation_level -= relative_indentation
         self.title_level -= 1
       end
@@ -139,7 +153,7 @@ module Pod
         puts_indented message if config.verbose?
 
         self.indentation_level += relative_indentation
-        yield if block_given?
+        time(message) { yield } if block_given?
         self.indentation_level -= relative_indentation
       end
 
@@ -159,7 +173,7 @@ module Pod
 
         self.indentation_level += 2
         @treat_titles_as_messages = true
-        yield if block_given?
+        time(message) { yield } if block_given?
         @treat_titles_as_messages = false
         self.indentation_level -= 2
       end
