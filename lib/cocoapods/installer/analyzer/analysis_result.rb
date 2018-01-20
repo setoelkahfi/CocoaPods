@@ -11,6 +11,10 @@ module Pod
         #
         attr_accessor :specs_by_target
 
+        # @return
+        #
+        attr_accessor :specs_by_source
+
         # @return [Array<Specification>] the specifications of the resolved
         #         version of Pods that should be installed.
         #
